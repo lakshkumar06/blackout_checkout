@@ -5,3 +5,7 @@ artifacts/
 playwright-report/
 test-results/
 .env.*
+runtime/
+cache/
+.secrets/
+**/xcuserdata/

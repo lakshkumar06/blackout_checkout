@@ -2,7 +2,7 @@ import {build} from 'esbuild';
 import {mkdir,writeFile,copyFile,readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 await mkdir('dist',{recursive:true});
-await build({entryPoints:['web/app.mjs'],outfile:'dist/app.js',bundle:true,inject:['web/shim.mjs'],define:{'process.browser':'true','process.env.NODE_ENV':'"production"'},minify:true,format:'esm',platform:'browser',target:['safari16']});
+await build({entryPoints:['web/app.mjs'],outfile:'dist/app.js',bundle:true,define:{'process.env.NODE_ENV':'"production"'},minify:true,format:'esm',platform:'browser',target:['safari16']});
 const assets=['/','/app.js','/style.css'];
 await Promise.all(['index.html','style.css'].map(f=>copyFile('web/'+f,'dist/'+f)));
 const hash=createHash('sha256');

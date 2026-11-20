@@ -1,101 +1,84 @@
 import QRCode from 'qrcode';
 import jsQR from 'jsqr';
-import {Wallet,JsonRpcProvider,Contract,parseUnits,formatUnits,randomBytes,hexlify,getAddress} from 'ethers';
-import {checkout,orderTerms} from '../src/payment.mjs';
-import {verifyRelay} from '../src/attestation.mjs';
-import {get,save,consume,allOrders} from './store.mjs';
+import {Wallet,formatUnits,hexlify,parseUnits,randomBytes} from 'ethers';
+import {CHAIN,cancelTypes,domain,match,receiveTypes,receiveValue,verifyReceive,verifySend} from '../src/intents.mjs';
+import {allOrders,get,remove,save} from './store.mjs';
 
-const $=id=>document.getElementById(id), box=$('content'), qr=$('qr');
-let config,order,stream,mode='merchant',scanner=0,busy=false,cacheReady=false;
-function notice(t,error=false){$('status').textContent=t;$('status').dataset.error=String(error);}
-function el(tag,text){const n=document.createElement(tag);n.textContent=text;return n;}
-function line(text){box.append(el('p',text));}
-function input(label,value='',type='text'){const id='input'+box.children.length,l=el('label',label);
-  l.htmlFor=id;const n=el('input','');n.id=id;n.type=type;n.value=value;box.append(l,n);return n;}
-function button(label,fn){const b=el('button',label);b.onclick=async()=>{b.disabled=true;try{await fn();}catch(e){notice(e.shortMessage||e.message,true);}finally{b.disabled=false;}};box.append(b);return b;}
-function stop(){scanner++;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$('camera').hidden=true;$('stop').hidden=true;}
-function view(title,next){stop();mode=next;$('title').textContent=title;box.replaceChildren();qr.hidden=true;notice('');
-  for(const n of ['merchant','customer','sales'])$(n).setAttribute('aria-current',String(n===mode));}
-async function draw(s){await QRCode.toCanvas(qr,s,{width:420,margin:4,errorCorrectionLevel:'L'});qr.hidden=false;}
-async function scan(fn){
-  stop();const generation=scanner;const video=$('camera'),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
-  const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
-  if(generation!==scanner){media.getTracks().forEach(t=>t.stop());return;}
-  stream=media;video.srcObject=media;video.hidden=false;$('stop').hidden=false;await video.play();
-  const frame=async()=>{if(generation!==scanner)return;
-    if(video.readyState>=2){canvas.width=Math.min(800,video.videoWidth);canvas.height=canvas.width*video.videoHeight/video.videoWidth;
-      ctx.drawImage(video,0,0,canvas.width,canvas.height);const px=ctx.getImageData(0,0,canvas.width,canvas.height);
-      const code=jsQR(px.data,px.width,px.height);if(code){stop();try{await fn(code.data);}catch(e){notice(e.message,true);}return;}}
-    requestAnimationFrame(frame);};frame();
+const $=id=>document.getElementById(id);
+const paths={sales:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>',add:'<path d="M12 5v14M5 12h14"/>',verify:'<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',payout:'<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',search:'<circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/>',check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',back:'<path d="M15 18l-6-6 6-6"/>'};
+let config,stream,scanGeneration=0,scanDone,screen='sales',activeOrder=null,syncing=false,cacheReady=false,filter='all',query='',amount='5.00',note='',merchantBalance=null;
+const icon=(name,size=20)=>`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]}</svg>`;
+const brand=(size=26)=>`<svg width="${size}" height="${size}" viewBox="0 0 24 24" role="img" aria-label="Blackout"><circle cx="12" cy="12" r="10" fill="#FAFAFA"/><path d="M12 2a10 10 0 010 20z" fill="#0B0B0C"/><circle cx="12" cy="12" r="10" fill="none" stroke="#FAFAFA" stroke-width="1.5"/></svg>`;
+const money=value=>Number(formatUnits(value,18)).toFixed(2);
+const short=value=>value?value.slice(0,6)+'…'+value.slice(-4):'—';
+const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+function notice(message,error=false){$('status').textContent=message;$('status').dataset.error=String(error);}
+function label(order){return {local:'Waiting for customer',local_match:'Matched locally · pending',waiting:order.send?'Waiting for buyer upload':'Waiting for customer',matched:'Matched · settling',submitted:'Submitted to Arc',settled:'Verified',awaiting_funds:'Waiting for buyer funds',retrying:'Retrying',failed:'Failed',expired:'Expired',cancelled:'Cancelled',external_settlement:'Check Arc settlement'}[order.status]||'Pending';}
+function type(order){return order.status==='settled'?'verified':['failed','expired','cancelled'].includes(order.status)?'rejected':'pending';}
+async function wallet(){let key=await get('settings','walletKey');if(!key){key=Wallet.createRandom().privateKey;await save('settings','walletKey',key);}return new Wallet(key);}
+async function api(path,body){const response=await fetch(path,{method:body?'POST':'GET',headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined,cache:'no-store',signal:AbortSignal.timeout(20000)});const result=await response.json();if(!response.ok)throw Error(result.error||'Server unavailable');return result;}
+function stopScan(){scanGeneration++;const video=$('camera');video.pause();video.srcObject=null;stream?.getTracks().forEach(track=>track.stop());stream=null;scanDone=null;$('start-camera').hidden=true;$('scan-overlay').hidden=true;}
+async function decodeQR(canvas){
+  if('BarcodeDetector' in window){try{const codes=await new BarcodeDetector({formats:['qr_code']}).detect(canvas);if(codes[0]?.rawValue)return codes[0].rawValue;}catch{}}
+  const context=canvas.getContext('2d',{willReadFrequently:true}),pixels=context.getImageData(0,0,canvas.width,canvas.height);
+  return jsQR(pixels.data,pixels.width,pixels.height,{inversionAttempts:'attemptBoth'})?.data;
 }
-async function api(path){const response=await fetch(path,{cache:'no-store',signal:AbortSignal.timeout(20000)});const json=await response.json();
-  if(!response.ok)throw Error(json.error||'Server unavailable');return json;}
-function matchConfig(o){orderTerms(o);if(!config||getAddress(o.contract)!==getAddress(config.contract))throw Error('Unknown checkout contract');}
-function parseOrder(text){const url=new URL(text);if(url.origin!==location.origin||!url.hash.startsWith('#order='))throw Error('Unknown order link');
-  const o=JSON.parse(decodeURIComponent(url.hash.slice(7)));matchConfig(o);return o;}
-async function takeProof(text){
-  const bundle=JSON.parse(text),target=await get('orders',bundle.receipt.id);
-  if(!target)throw Error('This register did not create that order');
-  if(target.status!=='open')throw Error('Already used');
-  await verifyRelay(bundle,target,target.relayKey);
-  await consume(target,bundle);view('Payment accepted','merchant');line(formatUnits(target.amount,18)+' test USDC');
-  notice('Relay confirmed · verified on this register');button('New sale',merchant);
+async function finishScan(value){const done=scanDone;stopScan();try{await done(JSON.parse(value));}catch(error){notice(error.message,true);}}
+async function scan(done){
+  stopScan();scanDone=done;const generation=scanGeneration,video=$('camera'),canvas=document.createElement('canvas');
+  $('scan-overlay').hidden=false;$('scan-help').textContent='Point the camera at the buyer’s signed QR.';
+  const frame=async()=>{
+    if(generation!==scanGeneration)return;
+    if(video.readyState>=2&&video.videoWidth&&video.videoHeight){
+      canvas.width=Math.min(1280,video.videoWidth);canvas.height=Math.round(canvas.width*video.videoHeight/video.videoWidth);
+      canvas.getContext('2d',{willReadFrequently:true}).drawImage(video,0,0,canvas.width,canvas.height);
+      const code=await decodeQR(canvas);
+      if(code){await finishScan(code);return;}
+    }
+    if(generation===scanGeneration)requestAnimationFrame(frame);
+  };
+  try{
+    if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera access needs HTTPS and a supported browser.');
+    const media=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1920},height:{ideal:1080}},audio:false});
+    if(generation!==scanGeneration){media.getTracks().forEach(track=>track.stop());return;}
+    stream=media;video.srcObject=media;
+    try{await video.play();frame();}
+    catch{
+      $('scan-help').textContent='Camera opened. Tap Start camera preview to begin scanning.';
+      $('start-camera').hidden=false;
+      $('start-camera').onclick=async()=>{try{await video.play();$('start-camera').hidden=true;$('scan-help').textContent='Point the camera at the buyer’s signed QR.';frame();}catch{$('scan-help').textContent='Preview could not start. Choose a QR image instead.';}};
+    }
+  }catch(error){$('scan-help').textContent=error.name==='NotAllowedError'?'Camera blocked. Allow access in your browser, or choose a QR image.':error.message+' Choose a QR image instead.';}
 }
-async function merchant(){
-  view('Open register','merchant');const addr=input('Vendor wallet',await get('settings','vendor')||'');
-  const amount=input('Amount in test USDC','','text');amount.inputMode='decimal';
-  line('Receipt mode: relay confirmed.');
-  button('Create order',async()=>{
-    if(!config||!cacheReady)throw Error('Open this register online once to prepare offline checkout');
-    const now=Math.floor(Date.now()/1000),vendor=getAddress(addr.value.trim());
-    const o={chain:config.chain,contract:config.contract,vendor,id:hexlify(randomBytes(16)),amount:String(parseUnits(amount.value.trim(),18))};
-    matchConfig(o);await save('settings','vendor',vendor);await save('orders',o.id,{...o,created:now,expires:now+900,status:'open',relayKey:config.relayKey});
-    view('Scan to pay','merchant');line(formatUnits(o.amount,18)+' test USDC');
-    await draw(location.origin+'/#order='+encodeURIComponent(JSON.stringify(o)));
-    button('Scan payment receipt',()=>scan(takeProof));
-  });
-  button('Scan existing receipt',()=>scan(takeProof));
+async function scanImage(file){if(!file||!scanDone)return;const image=await createImageBitmap(file),canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;canvas.getContext('2d',{willReadFrequently:true}).drawImage(image,0,0);image.close();const value=await decodeQR(canvas);if(!value)throw Error('No QR code found in that image');await finishScan(value);}
+function requireReady(){if(!config||config.mode!=='delayed-escrow'||!cacheReady)throw Error('Open this app online once before using it offline');}
+async function createInvoice(){requireReady();const value=String(parseUnits(amount.trim(),18));if(BigInt(value)<=0n)throw Error('Enter an amount');const w=await wallet(),base={v:2,kind:'receive',chain:CHAIN,contract:config.contract,id:hexlify(randomBytes(16)),vendor:w.address,amount:value,deadline:Math.floor(Date.now()/1000)+86400};const signature=await w.signTypedData(domain(config.contract),receiveTypes,receiveValue(base));const receive=verifyReceive({...base,signature},config.contract);await save('orders',receive.id,{role:'merchant',receive,note:note.trim(),status:'local',uploaded:false,created:Date.now()});activeOrder=receive.id;note='';await render('invoice');sync().catch(()=>{});}
+async function acceptSend(raw){requireReady();const send=verifySend(raw,config.contract),order=await get('orders',send.id);if(!order||order.role!=='merchant'||!match(order.receive,send))throw Error('Send does not match this invoice');if(Math.floor(Date.now()/1000)>send.deadline)throw Error('Invoice expired');if(order.send&&order.send.signature!==send.signature)throw Error('Different customer signed this order');order.send=send;order.status='local_match';await save('orders',send.id,order);activeOrder=send.id;await render('receipt');notice('Signatures match locally. Payment remains pending until Arc settles.');sync().catch(()=>{});}
+async function refreshMerchantBalance(address){
+  try{const result=await api('/api/wallet-balance/'+address);merchantBalance=result.balance;await save('settings','walletBalance',result.balance);}
+  catch{merchantBalance=await get('settings','walletBalance')??merchantBalance;}
 }
-async function customer(o){
-  view(o?'Review order':'Customer wallet','customer');order=o;
-  if(!config)throw Error('Reconnect to prepare the customer wallet');
-  let key=await get('settings','testKey');if(!key){key=Wallet.createRandom().privateKey;await save('settings','testKey',key);}
-  const provider=new JsonRpcProvider(config.rpc,undefined,{batchMaxCount:1}), wallet=new Wallet(key,provider);
-  const address=el('code',wallet.address);box.append(el('small','Your testnet wallet'),address);
-  const faucet=el('a','Fund with test USDC');faucet.href='https://faucet.circle.com';faucet.target='_blank';faucet.rel='noopener';box.append(el('p',''),faucet);
-  if(!o){button('Scan order',()=>scan(t=>customer(parseOrder(t))));return;}
-  matchConfig(o);line('Pay '+formatUnits(o.amount,18)+' test USDC to '+o.vendor);
-  const pending='sale:'+o.contract+':'+o.id+':'+o.amount;
-  button('Pay or retrieve receipt',async()=>{
-    if(busy)return;busy=true;
-    try{
-      let hash=await get('settings',pending);
-      if(!hash){
-        if((await provider.getNetwork()).chainId!==BigInt(config.chain))throw Error('Wrong payment network');
-        const contract=new Contract(o.contract,checkout,wallet);
-        notice('Sending test USDC…');const tx=await contract.pay(o.vendor,o.id,{value:BigInt(o.amount)});
-        hash=tx.hash;await save('settings',pending,hash);
-      }
-      notice('Waiting for payment and relay confirmation…');
-      const receipt=await provider.waitForTransaction(hash,1,45000);
-      if(!receipt)throw Error('Still confirming. Tap again to retrieve the same payment.');
-      if(receipt.status!==1){await save('settings',pending,null);throw Error('Payment failed on chain');}
-      const signed=await api('/api/receipt/'+hash);await verifyRelay(signed,{...o,created:0,expires:Number.MAX_SAFE_INTEGER},config.relayKey);
-      const saved=JSON.stringify(signed);await save('settings','lastProof',saved);
-      view('Show your receipt','customer');line('The merchant can scan this without internet.');await draw(saved);
-    }finally{busy=false;}
-  });
+async function cancelInvoice(order){
+  if(!navigator.onLine)throw Error('Reconnect before cancelling this invoice');
+  if(order.send||!['local','waiting'].includes(order.status))throw Error('This invoice can no longer be cancelled');
+  if(!confirm('Cancel this invoice? It will disappear from Sales and cannot be paid through this matcher.'))return;
+  const w=await wallet(),payload={v:2,kind:'cancel',chain:CHAIN,contract:config.contract,id:order.receive.id,vendor:w.address};
+  const signature=await w.signTypedData(domain(config.contract),cancelTypes,{id:payload.id,vendor:payload.vendor});
+  const state=await api('/api/cancel',{...payload,signature});
+  if(state.status!=='cancelled')throw Error('Invoice was not cancelled');
+  await remove('orders',order.receive.id);activeOrder=null;await render('sales');notice('Invoice cancelled.');
 }
-async function sales(){view('Register sales','sales');const orders=await allOrders();if(!orders.length)line('No sales yet.');
-  for(const o of orders.reverse()){const item=el('article',formatUnits(o.amount,18)+' USDC · '+o.status);
-    item.append(el('small',o.id));box.append(item);}}
-function route(fn){return ()=>fn().catch(e=>notice(e.message,true));}
-$('merchant').onclick=route(merchant);$('customer').onclick=route(()=>customer());$('sales').onclick=route(sales);$('stop').onclick=stop;
-async function init(){
-  config=await get('settings','config');
-  if(!config){try{config=await api('/api/config');await save('settings','config',config);}catch{notice('Connect once to set up this register',true);return;}}
-  if('serviceWorker' in navigator){await navigator.serviceWorker.register('/sw.js');await navigator.serviceWorker.ready;cacheReady=true;}
-  if(location.hash.startsWith('#order='))return customer(parseOrder(location.href));
-  await merchant();
-}
-init().catch(e=>notice(e.message,true));
+async function sync(){if(syncing||!config||!navigator.onLine)return;syncing=true;try{for(const order of (await allOrders()).filter(o=>o.role==='merchant'&&o.receive)){const intent=order.receive;if(!order.uploaded&&Math.floor(Date.now()/1000)>intent.deadline){order.status='expired';order.error='Invoice expired before upload';await save('orders',intent.id,order);continue;}try{const state=order.uploaded?await api('/api/status/'+intent.vendor+'/'+intent.id):await api('/api/intents',intent);order.uploaded=true;order.status=state.status;order.txHash=state.txHash;order.error=state.error;await save('orders',intent.id,order);}catch(error){order.error=error.message;await save('orders',intent.id,order);}}await refreshMerchantBalance((await wallet()).address);if(['sales','invoice','receipt'].includes(screen))await render(screen,false);}finally{syncing=false;}}
+function shell(address){$('sidebar').innerHTML=`<div class="logo">${brand()}<span>Blackout</span></div><nav aria-label="Merchant sections">${[['sales','Sales','sales'],['new','New sale','add'],['verify','Verify','verify'],['payouts','Payouts','payout'],['settings','Settings','settings']].map(([id,title,glyph])=>`<button class="nav-item ${screen===id?'active':''}" data-route="${id}">${icon(glyph,19)}${title}</button>`).join('')}</nav><div class="merchant-profile"><span class="avatar">GC</span><div><strong>Gate C Concessions</strong><small>${short(address)}</small></div></div>`;$('topbar').innerHTML=`<label class="search">${icon('search',16)}<input id="search-input" type="search" value="${esc(query)}" placeholder="Search invoices" aria-label="Search invoices"></label><div class="topbar-right"><div class="wallet-balance"><small>Wallet balance</small><strong>${merchantBalance===null?'—':money(merchantBalance)} <span>USDC</span></strong></div><span class="network"><i></i>Arc Testnet</span><span class="avatar">GC</span></div>`;$('search-input').oninput=event=>{query=event.target.value;if(screen!=='sales')render('sales',false);else renderSales().catch(error=>notice(error.message,true));};$('sidebar').querySelectorAll('[data-route]').forEach(button=>button.onclick=()=>render(button.dataset.route));}
+const heading=(title,action='')=>`<div class="page-heading"><h1>${title}</h1>${action}</div>`;
+async function renderSales(){const orders=(await allOrders()).filter(o=>o.role==='merchant'&&o.receive).sort((a,b)=>b.created-a.created),verified=orders.filter(o=>o.status==='settled'),today=verified.filter(o=>new Date(o.created).toDateString()===new Date().toDateString()),rejected=orders.filter(o=>['failed','expired'].includes(o.status)),total=today.reduce((sum,o)=>sum+BigInt(o.receive.amount),0n),visible=orders.filter(o=>(filter==='all'||type(o)===filter)&&(!query||[o.receive.id,o.send?.payer,o.note,label(o)].some(value=>String(value||'').toLowerCase().includes(query.toLowerCase()))));$('content').innerHTML=`${heading('Sales','<button class="button light" id="new-sale">'+icon('add',18)+' New sale</button>')}<div class="stats"><div class="stat featured"><span>Today</span><strong>${money(total)} <em>USDC</em></strong></div><div class="stat"><span>Verified sales</span><strong>${verified.length}</strong></div><div class="stat"><span>Rejected</span><strong>${rejected.length}</strong></div></div><div class="table-panel"><div class="tabs" role="tablist">${[['all','All'],['verified','Verified'],['rejected','Rejected'],['pending','Pending']].map(([id,title])=>`<button role="tab" aria-selected="${filter===id}" data-filter="${id}">${title}</button>`).join('')}</div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Invoice</th><th>Customer</th><th>Amount</th><th>Status</th></tr></thead><tbody>${visible.length?visible.map(order=>`<tr tabindex="0" data-order="${esc(order.receive.id)}"><td>${new Date(order.created).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</td><td>${short(order.receive.id)}</td><td>${short(order.send?.payer)}</td><td>${money(order.receive.amount)}</td><td><span class="badge ${type(order)}">${label(order)}</span></td></tr>`).join(''):'<tr><td class="empty" colspan="5">No invoices yet. Create a sale to get started.</td></tr>'}</tbody></table></div><div class="table-footer">Showing ${visible.length} of ${orders.length}<span>Page 1</span></div></div>`;$('new-sale').onclick=()=>render('new');$('content').querySelectorAll('[data-filter]').forEach(button=>button.onclick=()=>{filter=button.dataset.filter;renderSales();});$('content').querySelectorAll('[data-order]').forEach(row=>{row.onclick=()=>{activeOrder=row.dataset.order;render('invoice');};row.onkeydown=event=>{if(event.key==='Enter'){activeOrder=row.dataset.order;render('invoice');}};});}
+function renderNew(){$('content').innerHTML=`${heading('New sale')}<div class="mobile-vendor-head">${brand(22)}<strong>Blackout</strong><span>VENDOR</span><b class="avatar">GC</b></div><div class="sale-grid"><section class="sale-form card"><label class="field-label" for="amount">Amount (USDC)</label><div class="amount-field"><input id="amount" inputmode="decimal" autocomplete="off" aria-label="Amount in USDC" value="${esc(amount)}"><span>USDC</span></div><div class="quick-amounts">${['5.00','10.00','20.00','50.00'].map(value=>`<button class="quick ${amount===value?'selected':''}" data-amount="${value}">${value}</button>`).join('')}</div><label class="field-label" for="note">Note (optional)</label><input id="note" class="note-field" value="${esc(note)}" placeholder="What is this sale for?" maxlength="120"><div class="mobile-keypad">${['1','2','3','4','5','6','7','8','9','.','0','⌫'].map(digit=>`<button type="button" data-digit="${digit}" aria-label="${digit==='⌫'?'Delete':digit}">${digit}</button>`).join('')}</div><button id="create-invoice" class="button light full">Create invoice</button></section><section class="preview card"><div class="preview-caption">INVOICE PREVIEW</div><div class="preview-amount" id="preview-amount">${esc(amount)} <span>USDC</span></div><p>Ready to share with your customer</p><div class="preview-qr">${brand(58)}</div><small>Invoice appears here after you create it.</small></section></div>`;const input=$('amount');input.oninput=()=>{amount=input.value;$('preview-amount').innerHTML=esc(amount||'0')+' <span>USDC</span>';};$('note').oninput=event=>{note=event.target.value;};$('content').querySelectorAll('[data-digit]').forEach(button=>button.onclick=()=>{const digit=button.dataset.digit;const current=amount.replace(/^0+(?=\d)/,'');if(digit==='⌫')amount=current.slice(0,-1)||'0';else if(digit==='.'&&!current.includes('.'))amount=current+'.';else if(digit!=='.'&&(!current.includes('.')||current.split('.')[1].length<2))amount=(current==='0'?digit:current+digit);input.value=amount;$('preview-amount').innerHTML=esc(amount)+' <span>USDC</span>';});$('content').querySelectorAll('[data-amount]').forEach(button=>button.onclick=()=>{amount=button.dataset.amount;renderNew();});$('create-invoice').onclick=async()=>{const button=$('create-invoice');button.disabled=true;try{await createInvoice();}catch(error){notice(error.message,true);button.disabled=false;}};}
+async function renderInvoice(){const order=await get('orders',activeOrder);if(!order){await render('sales');return;}const paid=order.status==='settled';if(paid){screen='receipt';return renderReceipt();}$('content').innerHTML=`${heading('Invoice','<button class="button ghost" id="back-sales">'+icon('back',18)+' Sales</button>')}<div class="invoice-grid"><section class="invoice-card card"><div class="invoice-title">Invoice</div><div class="invoice-amount">${money(order.receive.amount)} <span>USDC</span></div><div class="muted">Invoice ${short(order.receive.id)}</div><div class="qr-frame"><canvas id="qr" role="img" aria-label="Invoice QR code"></canvas></div><div class="invoice-status"><i class="status-dot ${paid?'paid':''}"></i>${esc(label(order))}</div><p class="fine-print">${order.send?'Customer signature matches this invoice. Arc settlement is '+(paid?'complete.':'pending.'):'Customer scans this QR with the Blackout iOS wallet. The invoice can be shared while offline.'}</p><div class="invoice-actions"><button class="button light" id="scan-proof">${icon('verify',18)} Scan proof</button><button class="button dark" id="sync-invoice">Sync invoice</button>${!order.send&&["local","waiting"].includes(order.status)?`<button class="button ghost cancel-invoice" id="cancel-invoice">Cancel invoice</button>`:""}</div></section><section class="invoice-meta card"><div class="eyebrow">SALE DETAILS</div><div class="meta-row"><span>Amount</span><strong>${money(order.receive.amount)} USDC</strong></div><div class="meta-row"><span>Created</span><strong>${new Date(order.created).toLocaleString()}</strong></div><div class="meta-row"><span>Expires</span><strong>${new Date(order.receive.deadline*1000).toLocaleString()}</strong></div><div class="meta-row"><span>Customer</span><strong>${short(order.send?.payer)}</strong></div>${order.note?`<div class="meta-row"><span>Note</span><strong>${esc(order.note)}</strong></div>`:''}${order.txHash?`<a href="https://explorer.testnet.arc.io/tx/${esc(order.txHash)}" target="_blank" rel="noopener" class="arc-link">View on Arc ↗</a>`:''}</section></div>`;await QRCode.toCanvas($('qr'),JSON.stringify(order.receive),{width:264,margin:2,errorCorrectionLevel:'L'});$('back-sales').onclick=()=>render('sales');$('scan-proof').onclick=()=>scan(acceptSend).catch(error=>notice(error.message,true));$('sync-invoice').onclick=()=>sync().catch(error=>notice(error.message,true));if($('cancel-invoice'))$('cancel-invoice').onclick=()=>cancelInvoice(order).catch(error=>notice(error.message,true));}
+async function renderReceipt(){const order=await get('orders',activeOrder);if(!order){await render('sales');return;}const paid=order.status==='settled';$('content').innerHTML=`${heading('Receipt','<button class="button ghost" id="back-invoice">'+icon('back',18)+(paid?' Sales':' Invoice')+'</button>')}<section class="receipt card"><div class="receipt-icon ${paid?'paid':''}">${icon(paid?'check':'verify',34)}</div><h2>${paid?'Payment verified':'Payment pending'}</h2><p>${money(order.receive.amount)} USDC</p><div class="timeline"><div><i>${icon('check',13)}</i><span><strong>Customer signed</strong><small>${short(order.send?.payer)}</small></span></div><div><i>${icon(paid?'check':'verify',13)}</i><span><strong>${paid?'Finalized on Arc':'Waiting for Arc settlement'}</strong><small>${paid?'Transaction confirmed on Arc Testnet':'Both devices can upload when online'}</small></span></div><div><i>${icon('check',13)}</i><span><strong>Matches invoice</strong><small>${short(order.receive.id)}</small></span></div></div>${order.txHash?`<a href="https://explorer.testnet.arc.io/tx/${esc(order.txHash)}" target="_blank" rel="noopener" class="arc-link">View transaction on Arc ↗</a>`:''}<div class="receipt-actions">${paid?"":`<button class="button dark" id="sync-receipt">Sync status</button>`}<button class="button light" id="another-sale">New sale</button></div></section>`;$('back-invoice').onclick=()=>render(paid?'sales':'invoice');if($('sync-receipt'))$('sync-receipt').onclick=()=>sync().catch(error=>notice(error.message,true));$('another-sale').onclick=()=>render('new');}
+function renderVerify(){$('content').innerHTML=`${heading('Verify')}<section class="simple card"><div class="simple-icon">${icon('verify',32)}</div><h2>Scan customer proof</h2><p>Check the buyer’s signed QR against an invoice on this device. The match is local; the sale is paid after Arc confirms it.</p><button class="button light" id="verify-scan">${icon('verify',18)} Scan proof</button></section>`;$('verify-scan').onclick=()=>scan(acceptSend).catch(error=>notice(error.message,true));}
+async function renderPayouts(){const w=await wallet();$('content').innerHTML=`${heading('Payouts')}<section class="simple card"><div class="simple-icon">${icon('payout',32)}</div><h2>Merchant wallet</h2><p>Verified sales settle directly to this Arc Testnet address.</p><code>${w.address}</code><a class="arc-link" href="https://explorer.testnet.arc.io/address/${w.address}" target="_blank" rel="noopener">View on Arc ↗</a></section>`;}
+async function renderSettings(){const w=await wallet();$('content').innerHTML=`${heading('Settings')}<section class="simple card"><h2>Gate C Concessions</h2><p>Keep this testnet merchant key safe. Clearing browser storage removes this wallet and its local invoices.</p><code>${w.address}</code><details><summary>Wallet recovery</summary><p>Testnet only. Back up the private key before storing funds.</p><button class="button dark" id="reveal-key">Show recovery key</button><code id="recovery-key" hidden></code><label class="field-label" for="import-key">Import a testnet key</label><input id="import-key" class="note-field" type="password" placeholder="Paste private key"><button class="button dark" id="import-wallet">Import key</button></details></section>`;$('reveal-key').onclick=()=>{$('recovery-key').hidden=false;$('recovery-key').textContent=w.privateKey;};$('import-wallet').onclick=async()=>{try{if((await allOrders()).length)throw Error('Use a fresh browser profile to import another wallet');const imported=new Wallet($('import-key').value.trim());await save('settings','walletKey',imported.privateKey);await render('settings');notice('Merchant wallet imported.');}catch(error){notice(error.message,true);}};}
+async function render(next=screen,clear=true){screen=next;if(clear)notice('');const w=await wallet();shell(w.address);if(screen==='sales')await renderSales();else if(screen==='new')renderNew();else if(screen==='invoice')await renderInvoice();else if(screen==='receipt')await renderReceipt();else if(screen==='verify')renderVerify();else if(screen==='payouts')await renderPayouts();else if(screen==='settings')await renderSettings();updateMobile();}
+function updateMobile(){const mobile=matchMedia('(max-width: 700px)').matches;$('mobile-nav').hidden=!mobile;$('sidebar').hidden=mobile;$('topbar').hidden=mobile;$('mobile-nav').querySelectorAll('[data-route]').forEach(button=>button.classList.toggle('active',button.dataset.route===screen));}
+async function init(){const saved=await get('settings','config');config=saved?.mode==='delayed-escrow'?saved:null;try{const latest=await api('/api/config');if(latest.mode!=='delayed-escrow')throw Error('Wrong checkout version');config=latest;await save('settings','config',latest);}catch{if(!config)notice('Open this app online once before offline checkout',true);}if('serviceWorker' in navigator){if(!await navigator.serviceWorker.getRegistration())await navigator.serviceWorker.register('/sw.js');await navigator.serviceWorker.ready;cacheReady=true;}$('close-camera').onclick=stopScan;$('scan-file').onchange=event=>scanImage(event.target.files?.[0]).catch(error=>{$('scan-help').textContent=error.message;});$('scan-paste').onclick=()=>{const value=$('scan-json').value.trim();if(value)finishScan(value);};$('mobile-nav').querySelectorAll('[data-route]').forEach(button=>button.onclick=()=>render(button.dataset.route));window.addEventListener('resize',updateMobile);merchantBalance=await get('settings','walletBalance')??null;await render('sales',false);sync().catch(()=>{});}
+window.addEventListener('online',()=>sync().catch(()=>{}));document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync().catch(()=>{});});setInterval(()=>{if(!document.hidden)sync().catch(()=>{});},15000);init().catch(error=>notice(error.message,true));

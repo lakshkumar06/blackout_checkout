@@ -5,26 +5,21 @@
   "version": "0.1.0",
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "spike": "node scripts/spike.mjs",
     "compile": "node scripts/compile.mjs",
     "start": "node server/start.mjs",
     "deploy": "node scripts/deploy.mjs",
-    "build": "node scripts/build.mjs",
-    "keygen": "node scripts/keygen.mjs"
+    "build": "node scripts/build.mjs"
   },
   "dependencies": {
-    "@ethereumjs/trie": "6.2.1",
-    "@noble/curves": "1.9.7",
-    "ethers": "6.15.0",
+    "ethers": "6.17.0",
     "qrcode": "1.5.4",
     "jsqr": "1.4.0",
-    "esbuild": "0.25.12",
-    "buffer": "6.0.3",
-    "events": "3.3.0",
-    "fflate": "0.8.2"
+    "esbuild": "0.25.12"
   },
   "devDependencies": {
-    "solc": "0.8.30",
-    "ganache": "7.9.2"
+    "solc": "0.8.30"
+  },
+  "overrides": {
+    "tmp": "0.2.7"
   }
 }

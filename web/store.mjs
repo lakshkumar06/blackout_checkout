@@ -13,14 +13,10 @@ export async function save(store,key,value){
   return new Promise((resolve,reject)=>{const t=db.transaction(store,'readwrite');t.objectStore(store).put(value,key);
     t.oncomplete=resolve;t.onerror=()=>reject(t.error);});
 }
-export async function consume(order,bundle){
+export async function remove(store,key){
   const db=await opening;
-  return new Promise((resolve,reject)=>{const t=db.transaction('orders','readwrite'),s=t.objectStore('orders');
-    const r=s.get(order.id);
-    r.onsuccess=()=>{if(!r.result||r.result.status!=='open'){t.abort();return;}
-      s.put({...r.result,status:'paid',bundle},order.id);};
-    t.oncomplete=resolve;t.onabort=()=>reject(Error('Order already used or unknown'));t.onerror=()=>reject(t.error);
-  });
+  return new Promise((resolve,reject)=>{const t=db.transaction(store,'readwrite');t.objectStore(store).delete(key);
+    t.oncomplete=resolve;t.onerror=()=>reject(t.error);});
 }
 export async function allOrders(){
   const db=await opening;

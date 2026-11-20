@@ -1,0 +1,345 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0C8B363F3DBA2D808CEB2A70 /* CheckoutModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDAE6A605D9DFA54D2AFCB94 /* CheckoutModel.swift */; };
+		2A76904E004702FBAF77B5BE /* bridge.js in Resources */ = {isa = PBXBuildFile; fileRef = 1D44AE302C7427A8E4890EEE /* bridge.js */; };
+		4212B28FAE360011F5D44F70 /* BuyerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1476DE71018BFCE4701146 /* BuyerView.swift */; };
+		815D8D8C5E9C0887FE7DC9F1 /* bridge.html in Resources */ = {isa = PBXBuildFile; fileRef = 9F3EAB041FD9F677E557E7B8 /* bridge.html */; };
+		8CD359B1588C5E576ABA8D28 /* BuyerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EEE042BD540F8B1DFA2B26C /* BuyerApp.swift */; };
+		A5E36E9F73488774618419D9 /* CryptoBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8834ECC52DA9B2A91E59C231 /* CryptoBridge.swift */; };
+		A84CAD4E1A63DA1370782325 /* ScannerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95902CCD99A35F85415B4C06 /* ScannerSheet.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1D44AE302C7427A8E4890EEE /* bridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = bridge.js; sourceTree = "<group>"; };
+		6EEE042BD540F8B1DFA2B26C /* BuyerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyerApp.swift; sourceTree = "<group>"; };
+		8834ECC52DA9B2A91E59C231 /* CryptoBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoBridge.swift; sourceTree = "<group>"; };
+		95902CCD99A35F85415B4C06 /* ScannerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerSheet.swift; sourceTree = "<group>"; };
+		9F3EAB041FD9F677E557E7B8 /* bridge.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = bridge.html; sourceTree = "<group>"; };
+		AA1476DE71018BFCE4701146 /* BuyerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyerView.swift; sourceTree = "<group>"; };
+		CDAE6A605D9DFA54D2AFCB94 /* CheckoutModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutModel.swift; sourceTree = "<group>"; };
+		D47DC39530E6B2CBDFC611F1 /* BlackoutBuyer.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BlackoutBuyer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		04A62E2D61310501EE95AA8F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D47DC39530E6B2CBDFC611F1 /* BlackoutBuyer.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		6A9588DDC8E82B478991FA6A /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9F3EAB041FD9F677E557E7B8 /* bridge.html */,
+				1D44AE302C7427A8E4890EEE /* bridge.js */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		8A75D26C746851B7416790C1 /* BlackoutBuyer */ = {
+			isa = PBXGroup;
+			children = (
+				6EEE042BD540F8B1DFA2B26C /* BuyerApp.swift */,
+				AA1476DE71018BFCE4701146 /* BuyerView.swift */,
+				CDAE6A605D9DFA54D2AFCB94 /* CheckoutModel.swift */,
+				8834ECC52DA9B2A91E59C231 /* CryptoBridge.swift */,
+				95902CCD99A35F85415B4C06 /* ScannerSheet.swift */,
+				6A9588DDC8E82B478991FA6A /* Resources */,
+			);
+			path = BlackoutBuyer;
+			sourceTree = "<group>";
+		};
+		BC23849208C5F9363BCA5ED9 = {
+			isa = PBXGroup;
+			children = (
+				8A75D26C746851B7416790C1 /* BlackoutBuyer */,
+				04A62E2D61310501EE95AA8F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		92BF70D4228B1DED7F1D7D09 /* BlackoutBuyer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FE043AB81B51733B9ACD6E96 /* Build configuration list for PBXNativeTarget "BlackoutBuyer" */;
+			buildPhases = (
+				178C7FFCF253A94B08FB2425 /* Sources */,
+				BD486AB0FCA09BD01C244275 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BlackoutBuyer;
+			packageProductDependencies = (
+			);
+			productName = BlackoutBuyer;
+			productReference = D47DC39530E6B2CBDFC611F1 /* BlackoutBuyer.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		09F7B4C2086EDAF9EA63B583 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					92BF70D4228B1DED7F1D7D09 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 93AA35DF068AE936A2202CBF /* Build configuration list for PBXProject "BlackoutBuyer" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = BC23849208C5F9363BCA5ED9;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 04A62E2D61310501EE95AA8F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				92BF70D4228B1DED7F1D7D09 /* BlackoutBuyer */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BD486AB0FCA09BD01C244275 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				815D8D8C5E9C0887FE7DC9F1 /* bridge.html in Resources */,
+				2A76904E004702FBAF77B5BE /* bridge.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		178C7FFCF253A94B08FB2425 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8CD359B1588C5E576ABA8D28 /* BuyerApp.swift in Sources */,
+				4212B28FAE360011F5D44F70 /* BuyerView.swift in Sources */,
+				0C8B363F3DBA2D808CEB2A70 /* CheckoutModel.swift in Sources */,
+				A5E36E9F73488774618419D9 /* CryptoBridge.swift in Sources */,
+				A84CAD4E1A63DA1370782325 /* ScannerSheet.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		14A940A391DDF28A9A45FAB6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BlackoutBuyer/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan merchant invoice QR codes.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Connect to the Blackout Checkout matcher running on your Mac.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.blackoutcheckout.buyer;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		70AEB9342A79149BDE9A2067 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		C722A3F91F4946915C424369 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = BlackoutBuyer/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan merchant invoice QR codes.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Connect to the Blackout Checkout matcher running on your Mac.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.blackoutcheckout.buyer;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		E039968327F395B26F16C19C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		93AA35DF068AE936A2202CBF /* Build configuration list for PBXProject "BlackoutBuyer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				70AEB9342A79149BDE9A2067 /* Debug */,
+				E039968327F395B26F16C19C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FE043AB81B51733B9ACD6E96 /* Build configuration list for PBXNativeTarget "BlackoutBuyer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				14A940A391DDF28A9A45FAB6 /* Debug */,
+				C722A3F91F4946915C424369 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 09F7B4C2086EDAF9EA63B583 /* Project object */;
+}

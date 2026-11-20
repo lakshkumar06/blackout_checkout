@@ -1,6 +1,5 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#10291f"><title>Blackout Checkout</title><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script></head><body>
-<header><div class="brand">Blackout <b>Checkout</b></div><span id="network">Arc Testnet</span></header>
-<main><nav aria-label="Checkout mode"><button id="merchant">Merchant</button><button id="customer">Customer</button><button id="sales">Sales</button></nav>
-<h1 id="title">Open register</h1><div id="content"></div><p id="status" role="status"></p>
-<video id="camera" playsinline muted hidden></video><button id="stop" hidden>Close camera</button><canvas id="qr" hidden></canvas>
-</main></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0B0B0C"><title>Blackout · Merchant</title><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script></head><body>
+<div class="app-shell"><aside id="sidebar"></aside><main><header id="topbar"></header><div id="content"></div><p id="status" role="status"></p></main></div>
+<nav id="mobile-nav" aria-label="Merchant sections" hidden><button data-route="sales">Sales</button><button data-route="new">New sale</button><button data-route="verify">Verify</button></nav>
+<div id="scan-overlay" hidden><button id="close-camera" type="button">Close camera</button><video id="camera" playsinline muted autoplay></video><p id="scan-help" role="status">Point the camera at the buyer’s signed QR.</p><button id="start-camera" type="button" hidden>Start camera preview</button><label class="scan-file">Choose QR image<input id="scan-file" type="file" accept="image/*" hidden></label><div class="scan-paste"><input id="scan-json" type="text" placeholder="Or paste signed proof JSON" aria-label="Signed proof JSON"><button id="scan-paste" type="button">Use proof</button></div></div>
+</body></html>
